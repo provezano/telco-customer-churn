@@ -1,8 +1,28 @@
-FROM python:3.8.11-slim 
-ENV PYTHONUNBUFFERED=TRUE
-RUN pip install --upgrade pip
-RUN pip --no-cache-dir install numpy scikit-learn flask gunicorn
-WORKDIR /app 
-COPY ["*.py", "churn-model.bin", "./"] 
-EXPOSE 5000 
-ENTRYPOINT ["gunicorn", "--bind", "0.0.0.0:5000", "churn_serving:app"]
+#Grab the latest alpine image
+FROM python:3.8.11-slim
+
+# Install python and pip
+# RUN apk add --no-cache --update python3 py3-pip bash
+ADD ./webapp/requirements.txt /tmp/requirements.txt
+
+
+# Install dependencies
+RUN pip3 install --no-cache-dir -q -r /tmp/requirements.txt
+
+# Add our code
+ADD ./webapp /opt/webapp/
+ADD ./churn-model.bin /opt/webapp/
+
+WORKDIR /opt/webapp
+
+# Expose is NOT supported by Heroku
+# EXPOSE 5000 		
+
+# Run the image as a non-root user
+# RUN adduser -D coutinho
+# USER coutinho
+
+# Run the app.  CMD is required to run on Heroku
+# $PORT is set by Heroku			
+CMD gunicorn --bind 0.0.0.0:$PORT wsgi 
+
